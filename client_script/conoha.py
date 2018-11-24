@@ -1,9 +1,18 @@
+#
+#  Auto Create a Instance at Conoha VPS
+#  1. API-user/password Information should be in written 
+#    properly in ./setting.py.
+#  Auth: darkqueen
+
 import sys
 import requests
 import base64
 import json
 from requests.exceptions import HTTPError, RequestException, ReadTimeout
 
+#
+#  
+# 
 class CONOHA(object):
     import setting as __setting
     __endpoints = __setting.EndPoints
@@ -35,6 +44,7 @@ class CONOHA(object):
             print('Error: Could not get ConoHa token text.', e)
             sys.exit()
     
+    # post
     def post(self,endpoint,body):
         '''
         standerd post method :
@@ -47,6 +57,7 @@ class CONOHA(object):
             print('Error: Post', e)
             sys.exit()
 
+    # delete (access error)
     def delete(self,endpoint):
         try:
             __res = requests.delete( endpoint, headers=self._headers)
@@ -56,6 +67,7 @@ class CONOHA(object):
             print('Error: GET', e)
             sys.exit()
 
+    # get 
     def get(self,endpoint):
         '''
         standerd get method :
@@ -68,6 +80,9 @@ class CONOHA(object):
             print('Error: GET', e)
             sys.exit()
 
+    #
+    #  list of flavor names
+    #
     def dump_flavors(self):
         '''
         dump flavors information
@@ -76,6 +91,8 @@ class CONOHA(object):
         __res = self.get(__endpoint)
         print(json.dumps(__res, indent=2, sort_keys=True))
 
+    #
+    # list of images 
     def dump_images(self):
         '''
         dump images information
@@ -84,6 +101,9 @@ class CONOHA(object):
         __res=self.get(__endpoint)
         print(json.dumps(__res, indent=2, sort_keys=True))
 
+    #
+    # security group
+    #
     def dump_security_group(self):
         '''
         dump security group
@@ -133,7 +153,7 @@ class CONOHA(object):
             sys.exit()
 
     def del_my_public_key(self,keytag):
-        _endpoint = self.__endpoints["ComputeService"] + '​/os-keypairs/' + keytag
+        _endpoint = self.__endpoints["ComputeService"] + 'os-keypairs/' + keytag
         self.delete(_endpoint)
         
 
@@ -146,6 +166,7 @@ class CONOHA(object):
         
         with open(path_name, 'r') as content_file:
             pubkey_content = content_file.read()
+            pubkey_content = pubkey_content.rstrip("\n")
 
         __body = {  
             "keypair": {
@@ -180,6 +201,13 @@ class CONOHA(object):
         except (ValueError, NameError, ConnectionError, RequestException, HTTPError) as e:
             print('Error GET', e)
             sys.exit()     
+    
+    def get_adminPass(self):
+        if self.__vpn["adminPass"] == '':
+            return None
+        else:
+            return self.__vpn["adminPass"]
+
 
     def get_startup_base64(self, src_path=None):
         ''' Convert startup script into base64-form
@@ -239,6 +267,7 @@ class CONOHA(object):
             print('Error: Could not get base64 value of startup script.¥n', e)
             sys.exit()            
 
+
 def main():
     con = CONOHA()
     _security_group = con.get_security_name()
@@ -247,13 +276,14 @@ def main():
     _startup_base64 = con.get_startup_base64()
     _keyname = con.get_keyname()
     _tag_name= con.get_tagname()
+    _adminPass = con.get_adminPass()
     print('flavor uuid:', _flavor_uuid)
     print('start up: ', _startup_base64)
     print('image uuid: ', _image_uuid)
     # print('security group: ', _security_group)
     res = con.create_server(
         security_group= _security_group, 
-        adminPass= None,
+        adminPass= _adminPass,
         key_name= _keyname,
         flavor_uuid =  _flavor_uuid,
         image_uuid = _image_uuid,
@@ -261,14 +291,15 @@ def main():
         tag_name=_tag_name)
         
     print(res)
+    # show info
     res=con.get_server_info()
     print(res)
 
-def push_key():
-    con=CONOHA()
-    con.del_my_public_key('mykey')
-    con.push_my_public_key('mykey','/home/darkqueen/.ssh/id_rsa.pub')
+def push_new_key(new_key_name):
+     con=CONOHA()
+     con.push_my_public_key(new_key_name,'id_rsa.pub')
 
 if __name__ == '__main__':
+    # to push new key, copy key.pub in the same directory.
+    #push_new_key('mykey')
     main()
-    #push_key()

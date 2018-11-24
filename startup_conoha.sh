@@ -53,6 +53,7 @@ LOG='/tmp/startupfile.log'
 touch $LOG
 echo " startup file: " >$LOG
 
+
 #
 # 1. update CentOS
 #    This step takes logtime,
